@@ -154,7 +154,7 @@ void Genetic::updateAndEvolve()
         simulation->init(individuals);
     }
 }
-
+//PARALEL
 std::vector<Individual*> Genetic::nextGeneration()
 {
     std::vector<Individual*> newGeneration(individuals.size());

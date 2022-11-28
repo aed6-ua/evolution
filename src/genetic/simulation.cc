@@ -111,7 +111,7 @@ void FollowSimulation::init(const std::vector<Individual*> individuals)
         waypoints[i] = Point2d(x, randomNumber(0.0, height));
     }
 }
-
+//PARALEL
 void FollowSimulation::update()
 {
     for(int i=0;i<individuals.size();i++)
