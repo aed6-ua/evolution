@@ -47,8 +47,10 @@ void Genetic::initialize()
         individuals.clear();
         individuals.resize(population);
         
-        for(int i =0;i<population;i++)
-        { 
+        #pragma omp parallel for
+        for (int i = 0; i < population; i++)
+        {
+            // Inicializa cada individuo de la población de manera concurrente
             individuals[i] = createRandomIndividual();
         }
     }
@@ -118,17 +120,34 @@ void Genetic::save()
         int individualsSize = individuals.size();
         of.write(reinterpret_cast<char*>(&generation), sizeof generation);
         of.write(reinterpret_cast<char*>(&individualsSize), sizeof individualsSize);
-        for(int i = 0;i<individuals.size();i++)
+
+        // Crea un bloque paralelo utilizando OpenMP
+        #pragma omp parallel for
+        for (int i = 0; i < individuals.size(); i++)
         {
+            // Obtiene los pesos y conexiones del individuo actual
             std::vector<double> weights = individuals[i]->mlp->getWeights();
-            of.write(reinterpret_cast<char*>(&weights[0]), sizeof(double)*weights.size());
             std::vector<bool> connections = individuals[i]->mlp->getConnections();
-            //of.write(reinterpret_cast<char*>(&connections), sizeof(bool)*connections.size());
-            std::copy(connections.begin(), connections.end(), std::ostreambuf_iterator<char>(of));
+
+            // Escribe los pesos en el archivo de manera concurrente
+            of.write(reinterpret_cast<char*>(&weights[0]), sizeof(double)*weights.size());
+
+            // Convierte los valores de conexión a un vector de tipo char
+            // para poder escribirlos en el archivo de manera más sencilla
+            std::vector<char> temp(connections.size());
+            for (int j = 0; j < connections.size(); j++)
+            {
+                temp[j] = connections[j] ? 1 : 0;
+            }
+
+            // Escribe las conexiones en el archivo de manera concurrente
+            of.write(reinterpret_cast<char*>(&temp[0]), sizeof(char)*temp.size());
         }
+
         of.close();
     }
 }
+
 
 void Genetic::updateAndEvolve()
 {
@@ -136,7 +155,13 @@ void Genetic::updateAndEvolve()
     {
         if (this->simulationStartTime > 0.0)
         {
-            std::cout<<"Total simulation time: "<<omp_get_wtime() - this->simulationStartTime<<std::endl;
+            double totalSimulationTime = omp_get_wtime() - this->simulationStartTime;
+            std::cout<<"Total simulation time: "<<totalSimulationTime<<std::endl;
+            /*
+            std::ofstream outputFile;
+            outputFile.open("simulation_times_add.txt", std::ios_base::app);
+            outputFile << totalSimulationTime << std::endl;
+            outputFile.close();*/
         }
         this->simulationStartTime = omp_get_wtime();
         
@@ -154,13 +179,16 @@ void Genetic::updateAndEvolve()
         simulation->init(individuals);
     }
 }
+
 //PARALEL
+
 std::vector<Individual*> Genetic::nextGeneration()
 {
     std::vector<Individual*> newGeneration(individuals.size());
     std::vector<Individual*> best = bestIndividuals();
     
     // Perform elitism, best individuals pass directly to next generation
+    #pragma omp parallel for
     for(int i = 0;i<best.size()/2;i++)
     {
         Individual *elite = createRandomIndividual();
@@ -170,6 +198,7 @@ std::vector<Individual*> Genetic::nextGeneration()
     }
     
     // The remaining indiviuals are combination of two random individuals from the best
+    #pragma omp parallel for
     for(int i = best.size()/2; i<individuals.size();i++)
     {
         Individual *child = createRandomIndividual();
@@ -186,10 +215,14 @@ std::vector<Individual*> Genetic::nextGeneration()
     return newGeneration;
 }
 
+
 std::vector<Individual*> Genetic::bestIndividuals()
 {
+    //#pragma omp parallel for
     for(int i=0;i<individuals.size();i++)
+    {
         individuals[i]->calculateFitness();
+    }
 
     sort(individuals.begin(), individuals.end(), [](Individual *a, Individual *b)
     {

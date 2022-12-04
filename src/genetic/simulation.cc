@@ -61,6 +61,7 @@ bool Simulation::run(bool step)
     }
     else
     {
+        
         for(simulation = 0;simulation < simulations; simulation++)
         {
             init(individuals);
@@ -112,8 +113,10 @@ void FollowSimulation::init(const std::vector<Individual*> individuals)
     }
 }
 //PARALEL
+
 void FollowSimulation::update()
 {
+    #pragma omp parallel for
     for(int i=0;i<individuals.size();i++)
     {
         FollowIndividual *individual = (FollowIndividual*)individuals[i];
@@ -123,6 +126,7 @@ void FollowSimulation::update()
         }
     }
 }
+
 
 void FollowSimulation::updateIndividual(FollowIndividual* individual)
 {
