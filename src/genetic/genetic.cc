@@ -60,7 +60,7 @@ void Genetic::initialize()
 
 bool Genetic::load()
 {
-    if(true)//fileName.empty())
+    if(fileName.empty())
     {
         std::cout<<"No generation file specified"<<std::endl;
         
@@ -120,30 +120,14 @@ void Genetic::save()
         int individualsSize = individuals.size();
         of.write(reinterpret_cast<char*>(&generation), sizeof generation);
         of.write(reinterpret_cast<char*>(&individualsSize), sizeof individualsSize);
-
-        // Crea un bloque paralelo utilizando OpenMP
-        #pragma omp parallel for
-        for (int i = 0; i < individuals.size(); i++)
+        for(int i = 0;i<individuals.size();i++)
         {
-            // Obtiene los pesos y conexiones del individuo actual
             std::vector<double> weights = individuals[i]->mlp->getWeights();
-            std::vector<bool> connections = individuals[i]->mlp->getConnections();
-
-            // Escribe los pesos en el archivo de manera concurrente
             of.write(reinterpret_cast<char*>(&weights[0]), sizeof(double)*weights.size());
-
-            // Convierte los valores de conexión a un vector de tipo char
-            // para poder escribirlos en el archivo de manera más sencilla
-            std::vector<char> temp(connections.size());
-            for (int j = 0; j < connections.size(); j++)
-            {
-                temp[j] = connections[j] ? 1 : 0;
-            }
-
-            // Escribe las conexiones en el archivo de manera concurrente
-            of.write(reinterpret_cast<char*>(&temp[0]), sizeof(char)*temp.size());
+            std::vector<bool> connections = individuals[i]->mlp->getConnections();
+            //of.write(reinterpret_cast<char*>(&connections), sizeof(bool)*connections.size());
+            std::copy(connections.begin(), connections.end(), std::ostreambuf_iterator<char>(of));
         }
-
         of.close();
     }
 }

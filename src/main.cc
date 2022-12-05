@@ -21,7 +21,7 @@
 
 #include <time.h>
 
-int POB=100;
+int POB=500;
 int NUM_THREADS=1;
 std::vector<double> execution_times;
 int width = 500, height = 500;
@@ -121,13 +121,14 @@ void displaySimulation(void)
     std::cout<<"Update time: "<<updateTime<<" Display time: "<<omp_get_wtime() - start<<std::endl;
 
     //Hacer solo 100 iteraciones
+    /*
     if (genetic->generation > 99){
         std::ofstream outputFile;
         outputFile.open("execution_times.txt", std::ios_base::app);
         outputFile << POB << " " << NUM_THREADS << " " << omp_get_wtime() - sstart << std::endl;
         outputFile.close();
         glutLeaveMainLoop();
-    }
+    }*/
 }
 
 void displayNetwork(void)
@@ -160,8 +161,8 @@ void displayNetwork(void)
     glutPostRedisplay();
 
     //Hacer solo 100 iteraciones
-    if (genetic->generation > 99)
-        glutLeaveMainLoop();
+    //if (genetic->generation > 99)
+    //    glutLeaveMainLoop();
 }
 
 bool processArgs(int argc, char** argv, std::string &simulationName, bool &step)
@@ -177,9 +178,9 @@ bool processArgs(int argc, char** argv, std::string &simulationName, bool &step)
         step = false;
         simulationName = argv[1];
     }
-    else if(argc == 4)
+    else if(argc == 3)
     {
-        /*
+        
         if(std::string(argv[1]) == "-s")
         {
             step = true;
@@ -196,11 +197,10 @@ bool processArgs(int argc, char** argv, std::string &simulationName, bool &step)
             std::cout<<"Invalid argument specified: "<<argv[1]<<" "<<argv[2]<<std::endl;
             std::cout<<"Usage: evolution simulationName [-s]"<<std::endl;
             std::cout<<"\t-s:\t If specified, all generations are displayed, otherwise, only the generations multiple of 100 are displayed."<<std::endl;
-        }*/
-        step = false;
+        }
         simulationName = argv[1];
-        POB = atoi(argv[2]);
-        NUM_THREADS = atoi(argv[3]);
+        //POB = atoi(argv[2]);
+        //NUM_THREADS = atoi(argv[3]);
     }
     
     if(error || factory.find(simulationName) == factory.end())
@@ -223,9 +223,9 @@ int main(int argc, char** argv)
     {
         return 0;
     }
-    std::cout<<"Población: "<<POB<<std::endl;
-    omp_set_num_threads(NUM_THREADS);
-    std::cout<<"Threads: "<<NUM_THREADS<<std::endl;
+    //std::cout<<"Población: "<<POB<<std::endl;
+    //omp_set_num_threads(NUM_THREADS);
+    //std::cout<<"Threads: "<<NUM_THREADS<<std::endl;
 
     genetic = factory[simulationName](simulationName);
     genetic->initialize();
