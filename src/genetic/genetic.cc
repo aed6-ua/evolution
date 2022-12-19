@@ -58,6 +58,78 @@ void Genetic::initialize()
     simulation->init(individuals);
 }
 
+char* Genetic::serializeGeneration(std::vector<Individual*> individualsLocal)
+{
+    std::stringstream ss;
+    int individualsSize = individualsLocal.size();
+    ss.write(reinterpret_cast<char*>(&generation), sizeof(generation));
+    ss.write(reinterpret_cast<char*>(&individualsSize), sizeof(individualsSize));
+    for(int i =0;i<individualsLocal.size();i++)
+    {
+        std::vector<double> weights = individualsLocal[i]->mlp->getWeights();
+        ss.write(reinterpret_cast<char*>(&weights[0]), sizeof(double)*weights.size());
+        std::vector<bool> connections = individualsLocal[i]->mlp->getConnections();
+        //ss.write(reinterpret_cast<char*>(&connections), sizeof(bool)*connections.size());
+        std::copy(connections.begin(), connections.end(), std::ostreambuf_iterator<char>(ss));
+    }
+    std::string str = ss.str();
+    char* buffer = new char[str.size()];
+    memcpy(buffer, str.c_str(), str.size());
+    return buffer;
+} 
+
+vector<Individual*> Genetic::deserializeGeneration(char* buffer)
+{
+    std::stringstream ss;
+    ss.write(buffer, sizeof(buffer));
+    int generationLocal;
+    int populationLocal;
+    ss.read(reinterpret_cast<char*>(&generationLocal), sizeof(generationLocal));
+    ss.read(reinterpret_cast<char*>(&populationLocal), sizeof(populationLocal));
+    std::vector<Individual*> individualsLocal;
+    individualsLocal.clear();
+    individualsLocal.resize(populationLocal);
+    for(int i =0;i<individualsLocal.size();i++)
+    {
+        individualsLocal[i] = createRandomIndividual();
+        Mlp* mlp = individualsLocal[i]->mlp;
+        int numWeights = mlp->getNumWeights();
+        std::vector<double> weights(numWeights);
+        
+        ss.read(reinterpret_cast<char*>(&weights[0]), sizeof(double)*weights.size());
+        mlp->setWeights(weights);
+
+        std::vector<bool> connections(numWeights);
+        std::vector<char> temp(numWeights);
+        ss.read(reinterpret_cast<char*>(&temp[0]), sizeof(char)*connections.size());
+        for(int j=0;j<numWeights;j++)
+        {
+            connections[j] = temp[j] == 1;
+        }
+        mlp->setConnections(connections);
+    }
+    return individualsLocal;
+}
+
+vector<Individual*> combineGenerations(vector<vector<Individual*>> generations)
+{
+    vector<Individual*> combined;
+    // Combinar las generaciones y quedarse con los 500 mejores
+    for(int i=0;i<generations.size();i++)
+    {
+        for(int j=0;j<generations[i].size();j++)
+        {
+            combined.push_back(generations[i][j]);
+        }
+    }
+    std::sort(combined.begin(), combined.end(), [](Individual *a, Individual *b)
+    {
+        return a->fitness > b->fitness;
+    });
+    combined.resize(500);
+    return combined;
+}
+
 bool Genetic::load()
 {
     if(fileName.empty())

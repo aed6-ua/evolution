@@ -13,6 +13,9 @@ public:
     Genetic(int population, const std::string &fileName, std::function<Individual*()> createRandomIndividual, Simulation* simulation);
     ~Genetic();
     virtual void initialize();
+    virtual vector<Individual*> deserializeGeneration(char*);
+    virtual char* serializeGeneration(vector<Individual*>);
+    virtual vector<Individual*> combineGenerations(vector<vector<Individual*>>);
     virtual bool load();
     virtual void save();
     virtual void updateAndEvolve();

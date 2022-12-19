@@ -21,6 +21,8 @@
 
 #include <time.h>
 
+#include <mpi.h>
+
 int POB=500;
 int NUM_THREADS=1;
 std::vector<double> execution_times;
@@ -93,11 +95,32 @@ void resizeNetwork(GLsizei w, GLsizei h)
 
 void displaySimulation(void)
 {
+    int world_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+    int world_size;
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     double sstart = omp_get_wtime();
     double start = omp_get_wtime();
     if(!step && genetic->generation > 0 && genetic->generation % 100 != 0)
         while(genetic->generation % 100 != 0)
             genetic->updateAndEvolve();
+        // Sincronización de los procesos
+        if (world_rank == 0) {
+            char *array;
+            std::vector<vector<Individual>> generations;
+            for (int i = 1; i < world_size; i++) {
+                MPI_Recv(array, POB, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                generations.push_back(Genetic::deserializeGeneration(array));
+            }
+            vector<Individual> generation = Genetic::combineGenerations(generations);
+            MPI_BCAST(Genetic::serializeGeneration(generation), POB, MPI_CHAR, 0, MPI_COMM_WORLD);
+        }
+        else {
+            char* array;
+            MPI_Send(Genetic::serializeGeneration(genetic->individuals), POB, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
+            MPI_Recv(array, POB, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            genetic->individuals = Genetic::deserializeGeneration(array);
+        }
     else
         genetic->updateAndEvolve();
     double updateTime = omp_get_wtime() - start;
@@ -219,6 +242,9 @@ bool processArgs(int argc, char** argv, std::string &simulationName, bool &step)
 
 int main(int argc, char** argv)
 {
+    // Inicializar MPI
+    MPI_Init(NULL, NULL);
+
     if(!processArgs(argc, argv, simulationName, step))
     {
         return 0;
@@ -247,6 +273,7 @@ int main(int argc, char** argv)
     
     glutMainLoop();
 
-    
+    // Finalizar MPI
+    MPI_Finalize();
     return 0;
 }
