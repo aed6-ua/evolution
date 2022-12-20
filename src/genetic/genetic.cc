@@ -10,6 +10,10 @@
 #include <iostream>
 #include <functional>
 #include <omp.h>
+#include <string.h>
+#include <sstream>
+
+using namespace std;
 
 Genetic::Genetic(int population, const std::string &fileName, std::function<Individual*()> createRandomIndividual, Simulation* simulation)
 {
@@ -71,6 +75,11 @@ char* Genetic::serializeGeneration(std::vector<Individual*> individualsLocal)
         std::vector<bool> connections = individualsLocal[i]->mlp->getConnections();
         //ss.write(reinterpret_cast<char*>(&connections), sizeof(bool)*connections.size());
         std::copy(connections.begin(), connections.end(), std::ostreambuf_iterator<char>(ss));
+        for(int i=0;i<individualsLocal.size();i++)
+        {
+            individualsLocal[i]->calculateFitness();
+        }
+        ss.write(reinterpret_cast<char*>(&(individualsLocal[i]->fitness)), sizeof(int));
     }
     std::string str = ss.str();
     char* buffer = new char[str.size()];
@@ -78,7 +87,7 @@ char* Genetic::serializeGeneration(std::vector<Individual*> individualsLocal)
     return buffer;
 } 
 
-vector<Individual*> Genetic::deserializeGeneration(char* buffer)
+std::vector<Individual*> Genetic::deserializeGeneration(char* buffer)
 {
     std::stringstream ss;
     ss.write(buffer, sizeof(buffer));
@@ -107,11 +116,13 @@ vector<Individual*> Genetic::deserializeGeneration(char* buffer)
             connections[j] = temp[j] == 1;
         }
         mlp->setConnections(connections);
+        int fitness;
+        ss.read(reinterpret_cast<char*>(&fitness), sizeof(int));
     }
     return individualsLocal;
 }
 
-vector<Individual*> combineGenerations(vector<vector<Individual*>> generations)
+std::vector<Individual*> Genetic::combineGenerations(std::vector<std::vector<Individual*>> &generations)
 {
     vector<Individual*> combined;
     // Combinar las generaciones y quedarse con los 500 mejores
@@ -292,4 +303,3 @@ std::vector<Individual*> Genetic::bestIndividuals()
     
     return std::vector<Individual*>(individuals.begin(), individuals.begin() + ((int)(individuals.size()*0.2)));
 }
-

@@ -7,15 +7,17 @@
 #include <functional>
 #include <string>
 
+using namespace std;
+
 class Genetic
 {
 public:
     Genetic(int population, const std::string &fileName, std::function<Individual*()> createRandomIndividual, Simulation* simulation);
     ~Genetic();
     virtual void initialize();
-    virtual vector<Individual*> deserializeGeneration(char*);
+    virtual std::vector<Individual*> deserializeGeneration(char*);
     virtual char* serializeGeneration(vector<Individual*>);
-    virtual vector<Individual*> combineGenerations(vector<vector<Individual*>>);
+    virtual std::vector<Individual*> combineGenerations(std::vector<std::vector<Individual*>>&);
     virtual bool load();
     virtual void save();
     virtual void updateAndEvolve();
