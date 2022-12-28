@@ -118,6 +118,7 @@ std::vector<Individual*> Genetic::deserializeGeneration(char* buffer)
         mlp->setConnections(connections);
         int fitness;
         ss.read(reinterpret_cast<char*>(&fitness), sizeof(int));
+        individualsLocal[i]->fitness = fitness;
     }
     return individualsLocal;
 }
