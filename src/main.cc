@@ -104,8 +104,8 @@ void displaySimulation(void)
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     double sstart = omp_get_wtime();
     double start = omp_get_wtime();
-    if(!step && genetic->generation > 0 && genetic->generation % 100 != 0) {
-        while(genetic->generation % 100 != 0)
+    if(!step && genetic->generation > 0 && genetic->generation % 10 != 0) {
+        while(genetic->generation % 10 != 0)
             genetic->updateAndEvolve();
         // Sincronización de los procesos
         
