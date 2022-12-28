@@ -116,7 +116,7 @@ void displaySimulation(void)
                 MPI_Recv(array, MESSAGE_SIZE, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 generations.push_back(genetic->Genetic::deserializeGeneration(array));
             }
-            std::vector<Individual*> generation; //= genetic->Genetic::combineGenerations(generations);
+            std::vector<Individual*> generation = genetic->Genetic::combineGenerations(generations);
             MPI_Bcast(genetic->Genetic::serializeGeneration(generation), MESSAGE_SIZE, MPI_CHAR, 0, MPI_COMM_WORLD);
         }
         else {
