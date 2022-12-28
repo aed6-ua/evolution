@@ -138,7 +138,6 @@ std::vector<Individual*> Genetic::combineGenerations(std::vector<std::vector<Ind
         });
         combined.resize(500);
     }
-    combined.resize(500);
     return combined;
 }
 
