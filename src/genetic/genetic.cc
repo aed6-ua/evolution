@@ -127,14 +127,17 @@ std::vector<Individual*> Genetic::combineGenerations(std::vector<std::vector<Ind
 {
     vector<Individual*> combined;
     // Combinar las generaciones y quedarse con los 500 mejores
-    for(auto const &v: generations)
-    {
-        combined.insert(combined.end(), v.begin(), v.end());
+    if (!generations.empty()) {
+        for(auto const &v: generations)
+        {
+            combined.insert(combined.end(), v.begin(), v.end());
+        }
+        std::sort(combined.begin(), combined.end(), [](Individual *a, Individual *b)
+        {
+            return a->fitness > b->fitness;
+        });
+        combined.resize(500);
     }
-    std::sort(combined.begin(), combined.end(), [](Individual *a, Individual *b)
-    {
-        return a->fitness > b->fitness;
-    });
     combined.resize(500);
     return combined;
 }
