@@ -107,10 +107,10 @@ void displaySimulation(void)
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     double sstart = omp_get_wtime();
     double start = omp_get_wtime();
-    if(!step && genetic->generation > 0 && genetic->generation % 10 != 0) {
+    if(!step && genetic->generation > 0 && genetic->generation % 50 != 0) {
         char* oldGen;
-        while(genetic->generation % 10 != 0) {
-            if (genetic->generation % 10 == (10 - 1))
+        while(genetic->generation % 50 != 0) {
+            if (genetic->generation % 50 == (50 - 1))
                 oldGen = genetic->updateAndEvolveLast();
             else
                 genetic->updateAndEvolve();
