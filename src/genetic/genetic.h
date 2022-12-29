@@ -21,6 +21,7 @@ public:
     virtual bool load();
     virtual void save();
     virtual void updateAndEvolve();
+    virtual char* updateAndEvolveLast();
 
     int population;
     std::vector<Individual*> individuals;

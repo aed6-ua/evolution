@@ -23,6 +23,9 @@
 
 #include <mpi.h>
 
+#include <sstream>
+
+
 using namespace std;
 
 int POB=500;
@@ -105,28 +108,35 @@ void displaySimulation(void)
     double sstart = omp_get_wtime();
     double start = omp_get_wtime();
     if(!step && genetic->generation > 0 && genetic->generation % 10 != 0) {
-        while(genetic->generation % 10 != 0)
-            genetic->updateAndEvolve();
+        char* oldGen;
+        while(genetic->generation % 10 != 0) {
+            if (genetic->generation % 10 == (10 - 1))
+                oldGen = genetic->updateAndEvolveLast();
+            else
+                genetic->updateAndEvolve();
+        }
         // Sincronización de los procesos
-        
+        char array[MESSAGE_SIZE];
+        char* newGen;
+        newGen = (char*)malloc(MESSAGE_SIZE);
         if (world_rank == 0) {
-            char *array;
             std::vector<std::vector<Individual*>> generations;
+            generations.push_back(genetic->Genetic::deserializeGeneration(oldGen));
             for (int i = 1; i < world_size; i++) {
                 MPI_Recv(array, MESSAGE_SIZE, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 generations.push_back(genetic->Genetic::deserializeGeneration(array));
             }
             std::vector<Individual*> generation = genetic->Genetic::combineGenerations(generations);
-            if (!generation.empty()) {
-                genetic->individuals = generation;
-            }
-            MPI_Bcast(genetic->Genetic::serializeGeneration(generation), MESSAGE_SIZE, MPI_CHAR, 0, MPI_COMM_WORLD);
+            newGen = genetic->Genetic::serializeGeneration(generation);
         }
         else {
-            char* array;
-            MPI_Send(genetic->Genetic::serializeGeneration(genetic->individuals), MESSAGE_SIZE, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
-            MPI_Recv(array, MESSAGE_SIZE, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            genetic->individuals = genetic->Genetic::deserializeGeneration(array);
+            MPI_Send(oldGen, MESSAGE_SIZE, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
+        }
+        MPI_Bcast(newGen, MESSAGE_SIZE, MPI_CHAR, 0, MPI_COMM_WORLD);
+        genetic->individuals = genetic->Genetic::deserializeGeneration(newGen);
+        free(newGen);
+        if (world_rank!=0) {
+            printf("Generación actualizada con la generación combinada\n");
         }
     }
     else

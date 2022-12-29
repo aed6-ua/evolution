@@ -79,8 +79,11 @@ char* Genetic::serializeGeneration(std::vector<Individual*> individualsLocal)
         {
             individualsLocal[i]->calculateFitness();
         }
-        ss.write(reinterpret_cast<char*>(&(individualsLocal[i]->fitness)), sizeof(int));
+        //std::cout<<individualsLocal[i]->fitness<<"\t";
+        int fitness = individualsLocal[i]->fitness;
+        ss.write(reinterpret_cast<char*>(&fitness), sizeof(fitness));
     }
+    //std::cout<<std::endl;
     std::string str = ss.str();
     char* buffer = new char[str.size()];
     memcpy(buffer, str.c_str(), str.size());
@@ -90,7 +93,7 @@ char* Genetic::serializeGeneration(std::vector<Individual*> individualsLocal)
 std::vector<Individual*> Genetic::deserializeGeneration(char* buffer)
 {
     std::stringstream ss;
-    ss.write(buffer, sizeof(buffer));
+    ss.write(buffer, 285508);
     int generationLocal;
     int populationLocal;
     ss.read(reinterpret_cast<char*>(&generationLocal), sizeof(generationLocal));
@@ -117,7 +120,7 @@ std::vector<Individual*> Genetic::deserializeGeneration(char* buffer)
         }
         mlp->setConnections(connections);
         int fitness;
-        ss.read(reinterpret_cast<char*>(&fitness), sizeof(int));
+        ss.read(reinterpret_cast<char*>(&fitness), sizeof(fitness));
         individualsLocal[i]->fitness = fitness;
     }
     return individualsLocal;
@@ -132,11 +135,13 @@ std::vector<Individual*> Genetic::combineGenerations(std::vector<std::vector<Ind
         {
             combined.insert(combined.end(), v.begin(), v.end());
         }
+        //std::cout<<"Tamaño combinado: "<<combined.size()<<std::endl;
         std::sort(combined.begin(), combined.end(), [](Individual *a, Individual *b)
         {
             return a->fitness > b->fitness;
         });
         combined.resize(500);
+        //std::cout<<"Tamaño combinado: "<<combined.size()<<std::endl;
     }
     return combined;
 }
@@ -246,6 +251,41 @@ void Genetic::updateAndEvolve()
         simulation->init(individuals);
     }
 }
+
+char* Genetic::updateAndEvolveLast()
+{
+    char* array;
+    if(!simulation->run(true))
+    {
+        if (this->simulationStartTime > 0.0)
+        {
+            double totalSimulationTime = omp_get_wtime() - this->simulationStartTime;
+            std::cout<<"Total simulation time: "<<totalSimulationTime<<std::endl;
+            /*
+            std::ofstream outputFile;
+            outputFile.open("simulation_times.txt", std::ios_base::app);
+            outputFile << totalSimulationTime << std::endl;
+            outputFile.close();*/
+        }
+        this->simulationStartTime = omp_get_wtime();
+
+        array = serializeGeneration(individuals);
+        std::vector<Individual*> newGeneration = nextGeneration();
+        
+        for(int i = 0;i < individuals.size(); i++)
+        {
+            delete individuals[i];
+        }
+        individuals = newGeneration;
+        generation++;
+        std::cout<<"Generation "<<generation<<std::endl;
+        save();
+        
+        simulation->init(individuals);
+    }
+    return array;
+}
+
 
 //PARALEL
 
